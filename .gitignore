@@ -3,3 +3,11 @@
 build/
 local.properties
 debug.keystore
+.idea
+*.class
+app/debug
+app/release
+capture
+.DS_Store
+Thumbs.db
+*.apk

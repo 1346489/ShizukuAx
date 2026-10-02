@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme_AxShizuku" parent="com.google.android.material:style/Theme.Material3.Dark.NoActionBar">
+    <style name="Theme.AxShizuku" parent="Theme.Material3.Dark.NoActionBar">
         <item name="colorPrimary">#7C4DFF</item>
         <item name="colorSecondary">#00E5FF</item>
         <item name="android:statusBarColor">#0B0B12</item>
         <item name="android:navigationBarColor">#0B0B12</item>
-        <item name="android:windowBackground">#0B0B12</item>
     </style>
 </resources>

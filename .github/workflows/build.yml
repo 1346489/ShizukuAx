@@ -15,30 +15,30 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: 纯手动安装 Gradle 8.5 (彻底绕开仓库残缺的 wrapper)
+      - name: 纯手动安装 Gradle 8.5
         run: |
           cd /opt
-          curl -L -o gradle-8.5-bin.zip https://services.gradle.org/distributions/gradle-8.5-bin.zip
-          unzip -q gradle-8.5-bin.zip
-          rm -f gradle-8.5-bin.zip
-          echo "GRADLE_HOME=/opt/gradle-8.5" >> $GITHUB_ENV
+          if [ ! -d gradle-8.5 ]; then
+            curl -L -o g.zip https://services.gradle.org/distributions/gradle-8.5-bin.zip
+            unzip -q g.zip && rm -f g.zip
+          fi
           echo "/opt/gradle-8.5/bin" >> $GITHUB_PATH
-          # 暴力清理仓库里可能残缺的 wrapper，强制后续只用系统 gradle 命令
-          rm -rf gradle/wrapper gradle gradlew gradlew.bat
+          rm -rf gradle/wrapper gradlew gradlew.bat
           mkdir -p app
-          # 生成调试签名防签名报错
           keytool -genkeypair -v -keystore app/debug.keystore -alias androiddebugkey -storepass android -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Debug,O=Android,C=US" || true
 
-      - name: 验证 Gradle 并构建 APK
+      - name: 构建并抓取真实错误
         run: |
-          which gradle
-          gradle --version
-          # 绝对路径硬编，绝不碰 ./gradlew
-          /opt/gradle-8.5/bin/gradle assembleDebug --no-daemon --stacktrace 2>&1 | tee build.log || true
-          echo "===== 真实编译错误（找第一个 ERROR/FAILURE/Unresolved/cannot find） ====="
-          grep -E "ERROR|FAILED|Unresolved|cannot find|error:|Exception" build.log | head -20 || true
-          echo "===== 构建输出尾部 ====="
-          tail -30 build.log
+          which gradle && gradle --version
+          /opt/gradle-8.5/bin/gradle clean assembleDebug --no-daemon --stacktrace > build.log 2>&1 || true
+          echo "===== [1] Kotlin 真实报错(e: 行) ====="
+          grep -nE "^e: |error: |w: " build.log | head -30 || true
+          echo "===== [2] 失败任务名 ====="
+          grep -nE "FAILED|BUILD FAILED|:app:compile" build.log | head -10 || true
+          echo "===== [3] 失败前上下文 ====="
+          grep -B 8 -A 25 "BUILD FAILED\|:app:compileDebugKotlin FAILED" build.log | head -120 || true
+          echo "===== [4] 尾部 ====="
+          tail -15 build.log
           if grep -q "BUILD FAILED" build.log; then exit 1; fi
 
       - name: 重命名产物

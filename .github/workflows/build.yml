@@ -8,34 +8,33 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: 设置 JDK 17
+      
+      - name: 设置 JDK 17 与 安装系统级 Gradle
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-      - name: 补齐 Wrapper 与签名
+          # 关键：直接让 CI 装好 Gradle 8.5，彻底不用仓库里残缺的 ./gradlew
+          gradle-version: '8.5'
+
+      - name: 生成调试签名 (防签名报错)
         run: |
-          mkdir -p gradle/wrapper
-          curl -L -o gradle/wrapper/gradle-wrapper.jar https://github.com/gradle/gradle/raw/v8.5.0/gradle/wrapper/gradle-wrapper.jar
-          echo "distributionUrl=https\\://services.gradle.org/distributions/gradle-8.5-bin.zip" > gradle/wrapper/gradle-wrapper.properties
-          chmod +x gradlew
-          keytool -genkeypair -v -keystore app/debug.keystore -alias androiddebugkey -storepass android -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
-      - name: 构建并抓取真实错误
-        id: build
+          mkdir -p app
+          keytool -genkeypair -v -keystore app/debug.keystore -alias androiddebugkey -storepass android -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Debug,O=Android,C=US"
+
+      - name: 赋予权限并构建 APK
         run: |
-          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee build.log || true
-          echo "===== 真实编译错误（找第一个 ERROR/FAILURE/Unresolved/cannot find） ====="
-          grep -E "ERROR|FAILED|Unresolved|cannot find|error:|Exception" build.log | head -20 || true
-          echo "===== 构建输出尾部 ====="
-          tail -30 build.log
-          # 若真失败则让步骤标红
-          if grep -q "BUILD FAILED" build.log; then exit 1; fi
-      - name: 重命名与上传
-        if: success()
+          chmod +x ./gradlew 2>/dev/null || true
+          # 关键：优先用系统装的 gradle 命令硬编；若失败再用本地 gradlew
+          gradle assembleDebug --no-daemon --stacktrace || ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: 重命名产物
         run: |
           mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/AxShizuku-debug.apk 2>/dev/null || true
-      - uses: actions/upload-artifact@v4
-        if: success()
+          
+      - name: 上传 APK
+        uses: actions/upload-artifact@v4
         with:
           name: AxShizuku-debug
           path: app/build/outputs/apk/debug/AxShizuku-debug.apk
+          retention-days: 90

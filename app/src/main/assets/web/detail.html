@@ -1,0 +1,11 @@
+<!doctype html><html><head><meta charset=utf8><link rel=stylesheet href=style.css></head><body class=detail>
+<div class=dhead><div class=ava></div><div><b id=n></b><br><small id=p></small></div></div>
+<div id=st class=badge></div><div class=rows id=r></div><div class=acts id=acts></div>
+<script src=app.js></script><script>
+const q=(location.search.split('pkg=')[1]||'');const d=JSON.parse(AxNative.detail(decodeURIComponent(q)));
+n.textContent=d.name;p.textContent=d.pkg;st.textContent=d.enabled?'已启用':'已禁用';
+r.innerHTML=`<div>版本 ${d.ver}</div><div>TargetSDK ${d.tgt}</div><div>安装 ${new Date(d.inst).toLocaleDateString()}</div><div>更新 ${new Date(d.upd).toLocaleDateString()}</div><div class=path>${d.path}</div>`;
+if(d.lvl==2){st.textContent+=' · 受保护';acts.innerHTML='<i>白名单保护，禁止写操作</i>'}
+else acts.innerHTML=`<button onclick="g('freeze')">冻结</button><button onclick="g('enable')">启用</button><button onclick="g('clearData')">清数据</button><button class=danger onclick="g('uninstall')">卸载</button>`;
+function g(o){if(d.lvl==1&&!confirm('关键组件，确认'+o+'？\n'+d.reason))return;alert(AxNative[o](d.pkg));location.reload()}
+</script></body></html>

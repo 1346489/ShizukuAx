@@ -1,7 +1,25 @@
 package me.x.shizukuax
-object RootBackend{
- private fun su(c:String)=runCatching{val p=Runtime.getRuntime().exec(arrayOf("su","-c",c));p.waitFor();(p.inputStream.bufferedReader().readText()+p.errorStream.bufferedReader().readText()).trim()}.getOrDefault("err")
- fun setEnabled(p:String,e:Boolean)=su("pm ${if(e)"enable $p" else "disable-user --user current $p"}")
- fun clear(p:String)=su("pm clear --user current $p")
- fun uninstall(p:String)=su("pm uninstall --user current $p")
+
+object RootBackend {
+
+    private fun su(cmd: String): String {
+        return try {
+            val p = Runtime.getRuntime().exec(arrayOf("su", "-c", cmd))
+            p.waitFor()
+            val out = p.inputStream.bufferedReader().readText()
+            val err = p.errorStream.bufferedReader().readText()
+            (out + err).trim()
+        } catch (e: Exception) {
+            "err"
+        }
+    }
+
+    fun setEnabled(pkg: String, enable: Boolean): String {
+        val op = if (enable) "enable $pkg" else "disable-user --user current $pkg"
+        return su("pm $op")
+    }
+
+    fun clear(pkg: String): String = su("pm clear --user current $pkg")
+
+    fun uninstall(pkg: String): String = su("pm uninstall --user current $pkg")
 }

@@ -1,5 +1,26 @@
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/scrim" android:layout_width="match_parent" android:layout_height="match_parent">
-<WebView android:id="@+id/web" android:layout_width="match_parent" android:layout_height="match_parent"/>
-<FrameLayout android:id="@+id/detailPanel" android:layout_width="320dp" android:layout_height="match_parent" android:layout_gravity="end" android:background="#11141d" android:visibility="gone" android:translationX="320dp">
-<WebView android:id="@+id/detailWeb" android:layout_width="match_parent" android:layout_height="match_parent"/></FrameLayout>
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/scrim"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <WebView
+        android:id="@+id/web"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <FrameLayout
+        android:id="@+id/detailPanel"
+        android:layout_width="320dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="end"
+        android:background="#11141D"
+        android:visibility="gone"
+        android:translationX="320dp">
+
+        <WebView
+            android:id="@+id/detailWeb"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+    </FrameLayout>
 </FrameLayout>

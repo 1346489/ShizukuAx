@@ -15,34 +15,36 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: 纯手动装 Gradle 并毁灭仓库旧 Wrapper
+      - name: 纯手动安装 Gradle 8.5（绕开仓库残缺 wrapper）
         run: |
           cd /opt
-          curl -L -o g.zip https://services.gradle.org/distributions/gradle-8.5-bin.zip
-          unzip -q g.zip && rm -f g.zip && mv gradle-8.5 g8
+          if [ ! -d g8 ]; then
+            curl -L -o g.zip https://services.gradle.org/distributions/gradle-8.5-bin.zip
+            unzip -q g.zip && rm -f g.zip && mv gradle-8.5 g8
+          fi
           echo "/opt/g8/bin" >> $GITHUB_PATH
-          # 暴力清理仓库里任何残缺的 wrapper，杜绝 CI 误执行
           rm -rf gradle/wrapper gradlew gradlew.bat gradle
           mkdir -p app
-          # 生成调试签名
-          keytool -genkeypair -v -keystore app/debug.keystore -alias androiddebugkey -storepass android -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Debug,O=Android,C=US" || true
+          keytool -genkeypair -v -keystore app/debug.keystore -alias androiddebugkey             -storepass android -keypass android -keyalg RSA -keysize 2048 -validity 10000             -dname "CN=Debug,O=Android,C=US" || true
 
-      - name: 验证并构建 APK（绝对路径硬编，绝不碰 gradlew）
+      - name: 构建 APK（绝对路径硬编）
         run: |
           which gradle || true
           /opt/g8/bin/gradle --version
-          # 强制用系统 gradle 绝对路径
-          /opt/g8/bin/gradle clean assembleDebug --no-daemon --stacktrace 2>&1 | tee build.log || true
+          /opt/g8/bin/gradle clean assembleDebug --no-daemon --stacktrace > build.log 2>&1 || true
           if grep -q "BUILD FAILED" build.log; then
-             echo "===== 报错抓取 ====="
-             grep -nE "e: |error: |FAILED|Unresolved|processDebugMainManifest" build.log | head -30 || true
-             exit 1
+            echo "===== [1] Kotlin/资源 真实报错 ====="
+            grep -nE "^e: |error: |ERROR:|FAILED|Unresolved|cannot find|not found|link" build.log | head -40 || true
+            echo "===== [2] 失败任务上下文 ====="
+            grep -B 6 -A 25 "processDebugMainManifest FAILED|processDebugResources FAILED|compileDebugKotlin FAILED|BUILD FAILED" build.log | head -160 || true
+            tail -20 build.log
+            exit 1
           fi
 
       - name: 重命名产物
         if: success()
         run: |
-          mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/AxShizuku-debug.apk 2>/dev/null || true
+          mv app/build/outputs/apk/debug/app-debug.apk              app/build/outputs/apk/debug/AxShizuku-debug.apk 2>/dev/null || true
 
       - name: 上传 APK
         if: success()
